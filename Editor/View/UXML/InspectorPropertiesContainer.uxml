@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:VisualElement name="Root" style="margin-bottom: 5px; margin-top: 5px;">
+        <ui:Label text="Label" name="Header" style="-unity-font-style: bold;" />
+        <ui:VisualElement name="PropertiesContainer" style="flex-grow: 1; margin-top: 2px; margin-right: 0; margin-bottom: 2px; margin-left: 0; padding-left: 2px;" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:Foldout text="Property name" name="Root" binding-path="Name" style="margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px;">
+        <ui:TextField label="Name" placeholder-text="filler text" name="PropertyName" binding-path="Name" />
+        <ui:TextField label="Type" placeholder-text="filler text" name="PropertyType" readonly="true" binding-path="Type" focusable="false" />
+        <uie:PropertyField name="PropertyValue" label="Value" binding-path="Value" />
+    </ui:Foldout>
+</ui:UXML>

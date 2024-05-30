@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:VisualElement name="Root" style="flex-grow: 1; min-width: 200px;">
+        <ui:VisualElement name="HeaderRoot" style="background-color: rgb(64, 64, 64); flex-direction: row; flex-shrink: 0;">
+            <ui:Label text="Property" style="margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px; font-size: 14px; -unity-font-style: bold;" />
+        </ui:VisualElement>
+        <ui:VisualElement style="flex-grow: 1; background-color: rgba(41, 41, 41, 0); flex-shrink: 1;">
+            <ui:ListView name="PropertyRoot" reorderable="true" item-template="project://database/Assets/Scripts/TextureDesigner/Editor/View/UXML/PropertyItemTemplate.uxml?fileID=9197481963319205126&amp;guid=940d800bf192aed43954379a82665de0&amp;type=3#PropertyItemTemplate" show-bound-collection-size="false" virtualization-method="DynamicHeight" style="flex-grow: 1;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

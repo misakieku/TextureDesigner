@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <uie:Toolbar name="Root">
+        <uie:ToolbarButton text="Save" name="SaveButton" />
+        <uie:ToolbarButton text="Save as" name="SaveAsButton" />
+        <uie:ToolbarSpacer style="flex-grow: 1;" />
+        <uie:ToolbarToggle name="PropertyToggle" tooltip="Properties panel" value="true" style="background-image: url(&quot;project://database/Assets/Scripts/TextureDesigner/Icon/PropertiesPanel.png?fileID=2800000&amp;guid=f6bd3572362eae34fb710946f6556307&amp;type=3#PropertiesPanel&quot;); height: auto; -unity-background-scale-mode: scale-to-fit; width: 25px;" />
+        <uie:ToolbarSpacer />
+        <uie:ToolbarToggle name="InspectorToggle" tooltip="Node inspector" value="true" style="background-image: url(&quot;project://database/Assets/Scripts/TextureDesigner/Icon/d_UnityEditor.InspectorWindow.png?fileID=2800000&amp;guid=c172d76182dfdcd40ada4f8e32e84b9f&amp;type=3#d_UnityEditor.InspectorWindow&quot;); width: 25px; -unity-background-scale-mode: scale-to-fit;" />
+        <uie:ToolbarSpacer />
+        <uie:ToolbarToggle name="PreviewToggle" tooltip="Preview panel" style="background-image: url(&quot;project://database/Assets/Scripts/TextureDesigner/Icon/Preview.png?fileID=2800000&amp;guid=fd8aa343822117f469f57ac2be7da8c5&amp;type=3#Preview&quot;); width: 25px; -unity-background-scale-mode: scale-to-fit;" />
+    </uie:Toolbar>
+</ui:UXML>

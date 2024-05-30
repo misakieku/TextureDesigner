@@ -1,0 +1,18 @@
+{
+    "name": "TextureDesigner.Editor",
+    "rootNamespace": "TextureDesigner.Editor",
+    "references": [
+        "GUID:24a1cf10679c8cf459a2ea6aa8e0b918"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
