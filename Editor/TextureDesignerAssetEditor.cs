@@ -1,6 +1,6 @@
-using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
+using UnityEngine.UIElements;
 
 namespace TextureDesigner.Editor
 {
@@ -21,18 +21,41 @@ namespace TextureDesigner.Editor
             return false;
         }
 
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            if (GUILayout.Button("Open Editor"))
-            {
-                TextureDesignerEditorWindow.Open((TextureDesignerAsset)target);
-            }
+            var asset = (TextureDesignerAsset)target;
 
-            if (GUILayout.Button("Save"))
+            var root = new VisualElement();
+
+            var openButton = new Button(() =>
             {
-                EditorUtility.SetDirty(target);
-                AssetDatabase.SaveAssets();
-            }
+                TextureDesignerEditorWindow.Open(asset);
+            })
+            {
+                text = "Open Editor"
+            };
+
+            var saveButton = new Button(() =>
+            {
+                asset.SaveAsset();
+            })
+            {
+                text = "Save"
+            };
+
+            var computeButton = new Button(() =>
+            {
+                asset.Compute();
+            })
+            {
+                text = "Compute"
+            };
+
+            root.Add(openButton);
+            root.Add(saveButton);
+            root.Add(computeButton);
+
+            return root;
         }
     }
 }

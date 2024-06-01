@@ -21,7 +21,6 @@ namespace TextureDesigner.Editor
         public List<Port> Ports => ports;
 
         public Action OnNodeSelect;
-        public Action<TextureDesignerEditorNode> OnNodeUnselect;
 
         public TextureDesignerEditorNode(TextureDesignerNode _node)
         {
@@ -85,7 +84,8 @@ namespace TextureDesigner.Editor
             var inputPort = Port.Create<Edge>(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, field.FieldType);
 
             inputPort.portName = string.IsNullOrEmpty(inputAttribute.Name) ? ObjectNames.NicifyVariableName(field.Name) : inputAttribute.Name;
-            inputPort.userData = field.GetValue(node);
+            var socket = (Socket)field.GetValue(node);
+            inputPort.userData = socket;
             inputPort.portColor = PortColor.GetColor(field.FieldType);
 
             inputContainer.Add(inputPort);
@@ -98,7 +98,8 @@ namespace TextureDesigner.Editor
             var outputPort = Port.Create<Edge>(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, field.FieldType);
 
             outputPort.portName = string.IsNullOrEmpty(outputAttribute.Name) ? ObjectNames.NicifyVariableName(field.Name) : outputAttribute.Name;
-            outputPort.userData = field.GetValue(node);
+            var socket = (Socket)field.GetValue(node);
+            outputPort.userData = socket;
             outputPort.portColor = PortColor.GetColor(field.FieldType);
 
             outputContainer.Add(outputPort);
@@ -114,11 +115,6 @@ namespace TextureDesigner.Editor
         {
             base.OnSelected();
             OnNodeSelect?.Invoke();
-        }
-
-        public override void OnUnselected()
-        {
-            OnNodeUnselect?.Invoke(this);
         }
 
         /// <summary>

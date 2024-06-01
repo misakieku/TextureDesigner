@@ -13,21 +13,23 @@ namespace TextureDesigner.Editor
 
         private VisualTreeAsset propertiesContainerAsset;
 
-        internal InspectorView(SerializedObject _serializedObject)
+        internal InspectorView()
         {
             style.width = 300;
 
-            serializedObject = _serializedObject;
-
-            var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath.INSPECTOR);
-            propertiesContainerAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath.INSPECTOR_PROPERTY_CONTAINER);
+            var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ConstAssets.INSPECTOR);
+            propertiesContainerAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ConstAssets.INSPECTOR_PROPERTY_CONTAINER);
 
             var root = uiAsset.Instantiate();
             root.style.flexGrow = 1;
-            root.pickingMode = PickingMode.Ignore;
             inspectorRoot = root.Q<ScrollView>("InspectorRoot");
 
             Add(root);
+        }
+
+        public void Initialize(SerializedObject _serializedObject)
+        {
+            serializedObject = _serializedObject;
         }
 
         internal void OnNodeSelectionChanged(List<ISelectable> selections)
@@ -49,5 +51,6 @@ namespace TextureDesigner.Editor
                 }
             }
         }
+
     }
 }

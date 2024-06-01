@@ -1,7 +1,6 @@
+using System;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Experimental.GraphView;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,12 +10,18 @@ namespace TextureDesigner.Editor
     {
         private TextureDesignerAsset currentAsset;
 
-        [SerializeField]
-        private StyleSheet styleSheet;
         private SerializedObject serializedObject;
+
         private InspectorView inspectorView;
         private TextureDesignerGraphView graphView;
-        private Toolbar toolbar;
+        private ToolbarView toolbar;
+
+        [MenuItem("Tools/TextureDesigner")]
+        static void Open()
+        {
+            var window = CreateWindow<TextureDesignerEditorWindow>(typeof(TextureDesignerEditorWindow), typeof(SceneView));
+            window.titleContent = new GUIContent("Texture Designer", EditorGUIUtility.IconContent(ConstAssets.EDITOR_WINDOW_ICON_PATH).image);
+        }
 
         public static void Open(TextureDesignerAsset asset)
         {
@@ -31,8 +36,11 @@ namespace TextureDesigner.Editor
             }
 
             window = CreateWindow<TextureDesignerEditorWindow>(typeof(TextureDesignerEditorWindow), typeof(SceneView));
-            window.titleContent = new GUIContent(asset.name, EditorGUIUtility.GetIconForObject(asset));
+            window.titleContent = new GUIContent(asset.name, EditorGUIUtility.IconContent(ConstAssets.EDITOR_WINDOW_ICON_PATH).image);
+
             window.LoadAsset(asset);
+            window.DrawGraph();
+            window.Initialize();
         }
 
         private void Clear()
@@ -53,33 +61,39 @@ namespace TextureDesigner.Editor
 
         private void OnEnable()
         {
+            DrawGraph();
             if (currentAsset != null)
             {
+                LoadAsset(currentAsset);
+
                 DrawGraph();
+                Initialize();
             }
         }
 
         public void LoadAsset(TextureDesignerAsset asset)
         {
+            Clear();
+
             currentAsset = asset;
             NodeLibrary.Instance.Load(currentAsset, true);
-
-            DrawGraph();
         }
 
         private void DrawGraph()
         {
-            serializedObject = new SerializedObject(currentAsset);
-
-            var toolbar = new ToolbarView();
+            toolbar = new ToolbarView();
+            toolbar.OnInspectorToggleTrigger = OnInspectorToggleTrigger;
 
             // If resizable panel is needed for inspector and property panel, use TwoPaneSplitView or resizable element(BlackBoard or ResizableElement)
             var graphContainer = new VisualElement() { name = "GraphContainer" };
             graphContainer.style.flexDirection = FlexDirection.Row;
             graphContainer.style.flexGrow = 1;
 
-            graphView = new TextureDesignerGraphView(serializedObject, styleSheet, this);
-            inspectorView = new InspectorView(serializedObject);
+            graphView = new TextureDesignerGraphView(this);
+            inspectorView = new InspectorView();
+
+            // Register the OnNodeSelect and OnNodeUnselect event
+            graphView.OnNodeSelect = OnNodeSelect;
 
             // Currently, the we don't need the property panel.
             // If needed, see PropertyBlackboardView.cs for implementation example
@@ -87,7 +101,6 @@ namespace TextureDesigner.Editor
 
             // Must add the Blackboard to the graphView
             //graphView.Add(propertiesPanel);
-            graphView.Add(inspectorView);
 
             // We can not directly add the graph view to the graphContainer since the RectangleSelector is calculate base on the parent position, so we need to add it to a container first
             var graphViewContainer = new VisualElement() { name = "GraphViewContainer" };
@@ -97,44 +110,67 @@ namespace TextureDesigner.Editor
             graphContainer.Add(graphViewContainer);
             graphContainer.Add(inspectorView);
 
-            var inspectorToggle = toolbar.Q<ToolbarToggle>("InspectorToggle");
-            inspectorToggle.RegisterValueChangedCallback(evt =>
-            {
-                if (evt.newValue)
-                    inspectorView.style.display = DisplayStyle.Flex;
-                else
-                    inspectorView.style.display = DisplayStyle.None;
-            });
-
-            // Toggle to show/hide the property panel
-            //var propertyToggle = toolbar.Q<ToolbarToggle>("PropertyToggle");
-            //propertyToggle.RegisterValueChangedCallback(evt =>
-            //{
-            //    if (evt.newValue)
-            //        propertiesPanel.style.display = DisplayStyle.Flex;
-            //    else
-            //        propertiesPanel.style.display = DisplayStyle.None;
-            //});
-
             rootVisualElement.Add(toolbar);
             rootVisualElement.Add(graphContainer);
+
+            // If no asset is loaded, show a warning label
+            if (currentAsset == null)
+            {
+                RenderNoAssetAlert();
+            }
         }
 
-        public void OnNodeSelect()
+        private void RenderNoAssetAlert()
+        {
+            var warningLabelContainer = new VisualElement();
+            var warningLabel = new Label("No asset loaded");
+
+            // If you thing setting up the style in code is too much, you can create a uxml file and instantiate it here
+            warningLabel.style.fontSize = 20;
+            warningLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+            warningLabelContainer.style.flexGrow = 1;
+            warningLabelContainer.style.justifyContent = Justify.Center;
+            warningLabelContainer.style.alignItems = Align.Center;
+            warningLabelContainer.style.backgroundColor = new Color(0f, 0f, 0f, 0.5f);
+            // Set the position to absolute to make sure the warning label is on top of the graph view
+            warningLabelContainer.style.position = Position.Absolute;
+            warningLabelContainer.style.width = new Length(100, LengthUnit.Percent);
+            warningLabelContainer.style.height = new Length(100, LengthUnit.Percent);
+
+            warningLabelContainer.Add(warningLabel);
+
+            rootVisualElement.Add(warningLabelContainer);
+        }
+
+        private void Initialize()
+        {
+            serializedObject = new SerializedObject(currentAsset);
+            toolbar.Initialize(serializedObject);
+            graphView.InitializeGraph(serializedObject);
+            inspectorView.Initialize(serializedObject);
+
+            Undo.undoRedoPerformed += OnUndoRedo;
+        }
+
+        private void OnUndoRedo()
+        {
+            graphView.ResetGraph();
+            graphView.InitializeGraph(serializedObject);
+        }
+
+        private void OnNodeSelect()
         {
             var selections = graphView.selection;
             inspectorView.OnNodeSelectionChanged(selections);
         }
 
-        public void OnNodeUnselect(TextureDesignerEditorNode node)
+        private void OnInspectorToggleTrigger(bool isON)
         {
-            // graphView.selection is not updated when a node is unselected, so we need to remove the node from the selection list
-            var selections = new System.Collections.Generic.List<ISelectable>();
-            selections.AddRange(graphView.selection);
-            if (selections.Remove(node))
-            {
-                inspectorView.OnNodeSelectionChanged(selections);
-            }
+            if (isON)
+                inspectorView.style.display = DisplayStyle.Flex;
+            else
+                inspectorView.style.display = DisplayStyle.None;
         }
     }
 }

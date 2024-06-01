@@ -7,11 +7,11 @@ namespace TextureDesigner
         public float Value;
 
         [NodeOutput]
-        public Socket Output;
+        public FloatSocket Output;
 
         public override Socket[] Process()
         {
-            Output = new Socket(Value, SocketValueType.Float);
+            Output = new FloatSocket(Value);
 
             return new Socket[] { Output };
         }

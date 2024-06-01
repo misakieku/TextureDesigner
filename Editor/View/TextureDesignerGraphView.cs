@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -5,6 +6,7 @@ using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 namespace TextureDesigner.Editor
 {
@@ -12,20 +14,38 @@ namespace TextureDesigner.Editor
     {
         private SerializedObject serializedObject;
         private TextureDesignerAsset currentAsset;
-        private TextureDesignerEditorWindow window;
-        public TextureDesignerEditorWindow Window => window;
         public TextureDesignerAsset CurrentAsset => currentAsset;
 
-        private Dictionary<string, TextureDesignerEditorNode> EditorNodeLibrary = new();
-        private Dictionary<Edge, Connection> ConnectionLibrary = new();
+        private Dictionary<string, TextureDesignerEditorNode> editorNodeLibrary;
+        private Dictionary<Edge, Connection> connectionLibrary;
 
+        public Action OnNodeSelect;
 
+        private GridBackground gridBackground;
         private NodeSearchProvider searchProvider;
-        public TextureDesignerGraphView(SerializedObject _serializedObject, StyleSheet _styleSheet, TextureDesignerEditorWindow _window)
+
+        private TextureDesignerEditorWindow window;
+        public TextureDesignerEditorWindow Window => window;
+        public TextureDesignerGraphView(TextureDesignerEditorWindow _windows)
+        {
+            window = _windows;
+
+            style.flexGrow = 1;
+            styleSheets.Add(ConstAssets.StyleSheet);
+
+            gridBackground = new GridBackground() { name = "grid" };
+            Add(gridBackground);
+            gridBackground.SendToBack();
+        }
+
+        public void InitializeGraph(SerializedObject _serializedObject)
         {
             serializedObject = _serializedObject;
             currentAsset = (TextureDesignerAsset)serializedObject.targetObject;
-            window = _window;
+            editorNodeLibrary = new Dictionary<string, TextureDesignerEditorNode>();
+            connectionLibrary = new Dictionary<Edge, Connection>();
+
+            graphViewChanged -= OnGraphViewChanged;
 
             searchProvider = ScriptableObject.CreateInstance<NodeSearchProvider>();
             searchProvider.GraphView = this;
@@ -35,11 +55,8 @@ namespace TextureDesigner.Editor
                 SearchWindow.Open(new SearchWindowContext(context.screenMousePosition), searchProvider);
             };
 
-            var gridBackground = new GridBackground() { name = "grid" };
-            Add(gridBackground);
-            gridBackground.SendToBack();
-            style.flexGrow = 1;
-            styleSheets.Add(_styleSheet);
+            viewTransform.position = currentAsset.GraphPosition;
+            viewTransform.scale = currentAsset.GraphScale;
 
             // Those are the unity built-in manipulators for graph view
             this.AddManipulator(new ContentDragger());
@@ -48,8 +65,43 @@ namespace TextureDesigner.Editor
             this.AddManipulator(new ClickSelector());
             this.AddManipulator(new ContentZoomer());
 
-            InitializeGraph();
+            InitializeAssetElements();
 
+            graphViewChanged += OnGraphViewChanged;
+        }
+
+        private void InitializeAssetElements()
+        {
+            if (currentAsset.Nodes.Count > 0)
+            {
+                foreach (var node in currentAsset.Nodes)
+                {
+                    AddEditorNodeToView(node);
+                }
+            }
+
+            if (currentAsset.Connections.Count > 0)
+            {
+                foreach (var connection in currentAsset.Connections)
+                {
+                    AddConnectionToView(connection);
+                }
+            }
+        }
+
+        public override void RemoveFromSelection(ISelectable selectable)
+        {
+            base.RemoveFromSelection(selectable);
+            OnNodeSelect?.Invoke();
+        }
+
+        public void ResetGraph()
+        {
+            // Need to unsubscribe the event to prevent the graph from being reset multiple times
+            graphViewChanged -= OnGraphViewChanged;
+            DeleteElements(graphElements.ToList());
+            editorNodeLibrary.Clear();
+            connectionLibrary.Clear();
             graphViewChanged += OnGraphViewChanged;
         }
 
@@ -58,7 +110,7 @@ namespace TextureDesigner.Editor
             if (graphViewChange.elementsToRemove != null)
             {
                 var removedElements = graphViewChange.elementsToRemove;
-                Undo.RecordObject(serializedObject.targetObject, $"Remove {removedElements.FirstOrDefault().GetType().Name}");
+                Undo.RecordObject(currentAsset, $"Remove elements");
 
                 for (var i = removedElements.Count - 1; i >= 0; i--)
                 {
@@ -66,18 +118,18 @@ namespace TextureDesigner.Editor
                     {
                         var asset = (TextureDesignerAsset)serializedObject.targetObject;
                         asset.Nodes.Remove(node.Node);
-                        EditorNodeLibrary.Remove(node.Node.ID);
+                        editorNodeLibrary.Remove(node.Node.ID);
                         NodeLibrary.Instance.UnregisterNode(node.Node.ID);
                     }
 
                     if (removedElements[i] is Edge edge)
                     {
-                        if (ConnectionLibrary.TryGetValue(edge, out var connection))
+                        if (connectionLibrary.TryGetValue(edge, out var connection))
                         {
                             currentAsset.Connections.Remove(connection);
-                            ConnectionLibrary.Remove(edge);
+                            connectionLibrary.Remove(edge);
 
-                            if (EditorNodeLibrary.TryGetValue(connection.InputPort.NodeID, out var inputEditorNode))
+                            if (editorNodeLibrary.TryGetValue(connection.InputPort.NodeID, out var inputEditorNode))
                             {
                                 inputEditorNode.Node.InputConnections.Remove(connection);
                             }
@@ -114,35 +166,18 @@ namespace TextureDesigner.Editor
 
                         var connection = new Connection(new ConnectionPort(inputEditorNode.Node.ID, inputIndex), new ConnectionPort(outputEditorNode.Node.ID, outputIndex));
                         currentAsset.Connections.Add(connection);
-                        ConnectionLibrary.Add(edge, connection);
+                        connectionLibrary.Add(edge, connection);
 
                         inputEditorNode.Node.InputConnections.Add(connection);
                     }
                 }
             }
 
+            currentAsset.SaveTransform(viewTransform);
+
             serializedObject.Update();
             EditorUtility.SetDirty(currentAsset);
             return graphViewChange;
-        }
-
-        private void InitializeGraph()
-        {
-            if (currentAsset.Nodes.Count > 0)
-            {
-                foreach (var node in currentAsset.Nodes)
-                {
-                    AddEditorNodeToView(node);
-                }
-            }
-
-            if (currentAsset.Connections.Count > 0)
-            {
-                foreach (var connection in currentAsset.Connections)
-                {
-                    AddConnectionToView(connection);
-                }
-            }
         }
 
         public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
@@ -197,28 +232,28 @@ namespace TextureDesigner.Editor
                 editorNode = new TextureDesignerEditorNode(node);
 
             editorNode.SetPosition(node.Position);
-            editorNode.OnNodeSelect = window.OnNodeSelect;
-            editorNode.OnNodeUnselect = window.OnNodeUnselect;
+            editorNode.OnNodeSelect = OnNodeSelect;
 
-            EditorNodeLibrary.Add(node.ID, editorNode);
+            editorNodeLibrary.Add(node.ID, editorNode);
 
             AddElement(editorNode);
         }
 
         private void AddConnectionToView(Connection connection)
         {
-            if (EditorNodeLibrary.TryGetValue(connection.InputPort.NodeID, out var inputNode)
-                && EditorNodeLibrary.TryGetValue(connection.OutputPort.NodeID, out var outputNode))
+            if (editorNodeLibrary.TryGetValue(connection.InputPort.NodeID, out var inputNode)
+                && editorNodeLibrary.TryGetValue(connection.OutputPort.NodeID, out var outputNode))
             {
                 var inputPort = inputNode.Ports[connection.InputPort.PortIndex];
                 var outputPort = outputNode.Ports[connection.OutputPort.PortIndex];
 
                 var edge = inputPort.ConnectTo(outputPort);
 
-                ConnectionLibrary.Add(edge, connection);
+                connectionLibrary.Add(edge, connection);
 
                 AddElement(edge);
             }
         }
+
     }
 }

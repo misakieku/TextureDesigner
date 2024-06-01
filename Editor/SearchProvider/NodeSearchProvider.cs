@@ -49,8 +49,8 @@ namespace TextureDesigner.Editor
                     if (!string.IsNullOrEmpty(nodeInfo.Category))
                     {
                         string title = $"{nodeInfo.Category}/{nodeInfo.Name}";
-                        var node = Activator.CreateInstance(type);
-                        SearchContextElements.Add(new SearchContextElement(node, title));
+                        // We only want to show the node that has the NodeInfoAttribute so that there is no need to create a instance of the node right now
+                        SearchContextElements.Add(new SearchContextElement(type, title));
                     }
                 }
             }
@@ -122,7 +122,9 @@ namespace TextureDesigner.Editor
 
             var element = (SearchContextElement)SearchTreeEntry.userData;
 
-            var node = element.Target as TextureDesignerNode;
+            // Create a new instance of the node
+            var type = element.Target as Type;
+            var node = Activator.CreateInstance(type) as TextureDesignerNode;
             node.SetPosition(new Rect(graphMousePosition, Vector2.zero));
             GraphView.AddNode(node);
 

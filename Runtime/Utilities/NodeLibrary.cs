@@ -5,7 +5,7 @@ namespace TextureDesigner
     /// <summary>
     /// Node library for the Texture Designer
     /// </summary>
-    public class NodeLibrary // If you don't like to manage a singleton class that store all the node, you can let each socket referencing their owner (node) and linked socket
+    public class NodeLibrary // If you don't like to manage a singleton class that store all the node, you can let each socket referencing their owner (node) and linked socket, you can find more information about this in TextureDesignerEditorNode.cs: Port.userData
     {
         private static NodeLibrary _instance;
         public static NodeLibrary Instance
@@ -20,7 +20,7 @@ namespace TextureDesigner
             }
         }
 
-        NodeLibrary()
+        private NodeLibrary()
         {
             nodes = new Dictionary<string, TextureDesignerNode>();
         }

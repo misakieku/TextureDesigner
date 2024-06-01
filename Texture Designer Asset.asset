@@ -16,6 +16,8 @@ MonoBehaviour:
   connections: []
   GlobalTextureWidth: 2048
   GlobalTextureHeight: 2048
+  GraphPosition: {x: -125.7143, y: 72.57143, z: 0}
+  GraphScale: {x: 1, y: 1, z: 1}
   references:
     version: 2
     RefIds: []
